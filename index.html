@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三毛猫の気まぐれクジ</title>
+<style>
+:root{--bg:#0b0b0d;--panel:rgba(255,255,255,.045);--text:#f4f1ed;--muted:#aaa4a0;--line:#6f6965;--button:#111;--accent:#d9d3cc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;min-height:100vh}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 0,rgba(255,255,255,.06),transparent 60%)}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+.topbar{display:flex;justify-content:flex-end;gap:8px;padding:18px max(18px,calc((100vw - 1000px)/2))}
+.wrap{max-width:1000px;margin:auto;padding:10px 22px 60px;text-align:center}
+h1{font-family:Georgia,serif;font-weight:500;letter-spacing:.12em;margin:8px 0 10px;font-size:clamp(1.8rem,5vw,3rem)}
+.lead{color:var(--muted);line-height:1.9;margin:0 auto 24px;max-width:620px}
+.cat-frame{max-width:570px;margin:0 auto 22px;border:1px solid var(--line);background:rgba(255,255,255,.025);padding:10px}
+.cat-frame img{display:block;width:100%;height:auto;max-height:360px;object-fit:contain}
+button,.btn{border:1px solid var(--line);color:var(--text);background:var(--button);padding:12px 22px;letter-spacing:.08em;transition:background .25s,color .25s,border-color .25s}
+button:hover{background:var(--text);color:#111;border-color:var(--text)}
+.draw-btn{min-width:230px;font-size:1.05rem;background:transparent;border:1px solid var(--accent);color:var(--text);padding:16px 30px}
+.draw-btn:hover{background:#000;color:#fff;box-shadow:0 0 0 1px #fff inset}
+.secondary{background:transparent;padding:8px 13px;font-size:.88rem}
+.nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:22px 0}
+.note{font-size:.82rem;color:var(--muted);margin-top:18px}
+.hidden{display:none!important}
+.card{border:1px solid var(--line);background:rgba(255,255,255,.035);padding:22px;margin:18px auto;text-align:left;max-width:800px}
+.card h2{margin-top:0;font-weight:500;letter-spacing:.08em}
+.result-card{max-width:390px;text-align:center;background:rgba(255,255,255,.94);color:#191919;border:2px solid #b9b9b9;padding:24px 18px;position:relative}
+.result-card:before{content:"🐾";display:block;font-size:24px;color:#aaa;margin-bottom:12px}
+.result-card:after{content:"";position:absolute;inset:7px;border:1px solid #d0d0d0;pointer-events:none}
+.result-name{font-size:1.5rem;font-weight:600;overflow-wrap:anywhere}
+.choice-row{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:20px 0}
+.choice-row button{min-width:145px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;text-align:left;margin:10px 0}
+.field label{font-size:.88rem;color:var(--muted)}
+input,textarea,select{width:100%;padding:10px;background:rgba(0,0,0,.45);border:1px solid var(--line);color:var(--text);border-radius:0}
+input[type=color]{height:42px;padding:4px}
+input[type=checkbox]{width:auto}
+table{width:100%;border-collapse:collapse;background:transparent}th,td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:middle}th{color:var(--muted);font-weight:500}
+.table-wrap{overflow-x:auto}
+.item-row{display:grid;grid-template-columns:1fr 90px auto;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:9px 0}
+.small{font-size:.8rem;color:var(--muted)}
+.status{min-height:1.5em;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+footer{font-size:.78rem;color:var(--muted);margin-top:38px}
+@media(max-width:560px){.wrap{padding-left:14px;padding-right:14px}.card{padding:15px}.topbar{padding:12px}.item-row{grid-template-columns:1fr 65px auto}}
+</style>
+</head>
+<body>
+<header class="topbar"><button class="secondary" id="adminOpen">管理画面</button></header>
+<main class="wrap">
+  <h1 id="pageTitle">三毛猫の気まぐれクジ</h1>
+  <p class="lead" id="pageDescription">三毛猫があらわれた。気まぐれな猫に声を掛けるか、そっと撫でてみよう。何が起こるかは猫次第。</p>
+  <section id="home">
+    <div class="cat-frame"><img id="catImage" src="assets/calico_1.jpg" alt="アタリ札をくわえた三毛猫"></div>
+    <div id="encounter" class="hidden">
+      <p id="eventText">三毛猫があらわれた。</p>
+      <p>どうする？</p>
+      <div class="choice-row"><button id="talkBtn">声を掛ける</button><button id="petBtn">撫でる</button></div>
+    </div>
+    <button id="drawBtn" class="draw-btn">クジを引く</button>
+    <p class="status" id="status"></p>
+    <div id="resultArea" class="hidden">
+      <div class="card result-card"><div class="result-name" id="resultName"></div></div>
+      <p><button id="closeResult" class="secondary">閉じる</button></p>
+    </div>
+    <div class="nav"><button class="secondary" id="historyOpen">当選履歴</button></div>
+    <p class="note">クジは原則1日1回。アイテムはランダムで決まります。</p>
+  </section>
+
+  <section id="historyPanel" class="card hidden">
+    <h2>当選履歴</h2><div class="table-wrap"><table><thead><tr><th>日時</th><th>当選アイテム</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+    <p><button class="secondary" id="historyClose">戻る</button></p>
+  </section>
+
+  <section id="adminPanel" class="card hidden">
+    <h2>管理画面</h2>
+    <p class="small">管理者向け設定。変更後は「設定を保存」、必要に応じて「更新」を押してください。</p>
+    <div class="grid">
+      <div class="field"><label for="settingTitle">タイトル</label><input id="settingTitle"></div>
+      <div class="field"><label for="settingDescription">説明文</label><input id="settingDescription"></div>
+      <div class="field"><label for="settingTextColor">文字色</label><input id="settingTextColor" type="color" value="#f4f1ed"></div>
+      <div class="field"><label for="settingButtonColor">クジ引きボタン色</label><input id="settingButtonColor" type="color" value="#111111"></div>
+      <div class="field"><label for="settingLineColor">線・枠の色</label><input id="settingLineColor" type="color" value="#6f6965"></div>
+      <div class="field"><label for="dailyLimit">1日のクジ回数上限</label><input id="dailyLimit" type="number" min="1" max="100" value="1"></div>
+    </div>
+    <div class="field"><label for="winPhrase">当選時のセリフ（演出表示）</label><input id="winPhrase" value="三毛猫からの贈り物！"></div>
+    <div class="grid">
+      <div class="field"><label for="newItemName">アイテム名</label><input id="newItemName" placeholder="例：お楽しみアイテム"></div>
+      <div class="field"><label for="newItemCount">個数</label><input id="newItemCount" type="number" min="0" value="1"></div>
+    </div>
+    <div class="field"><label for="newItemImage">アイテム画像（任意）</label><input id="newItemImage" type="file" accept="image/*"></div>
+    <button id="addItemBtn">アイテムを追加</button>
+    <button id="saveSettingsBtn">設定を保存</button>
+    <button id="refreshBtn">更新</button>
+    <button id="resetDailyBtn" class="secondary">本日の回数をリセット</button>
+    <hr>
+    <h2>アイテム管理</h2>
+    <div id="itemsList"></div>
+    <p class="small">個数は日本時間の午前0時に日次在庫として更新されます。アイテム名・個数・画像は保存されます。</p>
+    <hr>
+    <h2>履歴からアイテムを追加</h2>
+    <div class="field"><label for="historyItemName">当選履歴のアイテム名</label><input id="historyItemName" placeholder="追加したいアイテム名"></div>
+    <div class="field"><label for="historyItemCount">個数</label><input id="historyItemCount" type="number" min="0" value="1"></div>
+    <button id="addFromHistoryBtn">この名前でアイテムを追加</button>
+    <p><button class="secondary" id="adminClose">管理画面を閉じる</button></p>
+  </section>
+  <footer>三毛猫の気まぐれクジ</footer>
+</main>
+<script>
+(() => {
+'use strict';
+const ADMIN_HASH = 'ab51004e9d71a485f160f655fb9e72bcdef8f5ca4178b26938b49471456fd11c';
+const KEY = 'calicoLottery_v1';
+const defaultState = {
+ settings:{title:'三毛猫の気まぐれクジ',description:'三毛猫があらわれた。気まぐれな猫に声を掛けるか、そっと撫でてみよう。何が起こるかは猫次第。',textColor:'#f4f1ed',buttonColor:'#111111',lineColor:'#6f6965',dailyLimit:1,winPhrase:'三毛猫からの贈り物！'},
+ items:[
+  {id:1,name:'お楽しみアイテム',count:1,image:''},
+  {id:2,name:'猫のおもちゃ',count:1,image:''},
+  {id:3,name:'秘密の贈り物',count:1,image:''}
+ ],history:[],daily:{date:'',count:0}
+};
+let state, adminUnlocked=false, encounterStarted=false, pendingAction=false;
+const $=id=>document.getElementById(id);
+function load(){try{const raw=localStorage.getItem(KEY);state=raw?JSON.parse(raw):structuredClone(defaultState)}catch(e){state=structuredClone(defaultState)} normalize();rollover();save();applySettings()}
+function normalize(){state.settings={...defaultState.settings,...(state.settings||{})};state.items=Array.isArray(state.items)?state.items:[];state.history=Array.isArray(state.history)?state.history:[];state.daily=state.daily||{date:'',count:0};}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function today(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
+function rollover(){const d=today();if(state.daily.date!==d){state.daily={date:d,count:0};state.items.forEach(i=>i.remaining=Number(i.count)||0);save()}}
+function applySettings(){const s=state.settings;document.documentElement.style.setProperty('--text',s.textColor);document.documentElement.style.setProperty('--button',s.buttonColor);document.documentElement.style.setProperty('--line',s.lineColor);$('pageTitle').textContent=s.title;$('pageDescription').textContent=s.description;document.title=s.title}
+function randomCat(){ $('catImage').src='assets/calico_'+(1+Math.floor(Math.random()*3))+'.jpg';}
+function showOnly(id){['home','historyPanel','adminPanel'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
+function dailyRemaining(){rollover();return Math.max(0,Number(state.settings.dailyLimit||1)-Number(state.daily.count||0))}
+function startDraw(){rollover();if(dailyRemaining()<=0){$('status').textContent='本日のクジは終了しました。また明日お越しください。';return}if(!state.items.some(i=>(i.remaining??i.count)>0)){ $('status').textContent='現在、クジの中身がありません。管理者にお知らせください。';return}
+ encounterStarted=true;pendingAction=true;$('eventText').textContent='三毛猫があらわれた。';$('encounter').classList.remove('hidden');$('drawBtn').classList.add('hidden');$('status').textContent='';randomCat();}
+const reactions={talk:['シャーされた','ミギャーと鳴かれた','逃げられた','ゴロゴロ喉を鳴らした'],pet:['嚙まれた','尻尾ベシベシされた','スリスリされた','ゴロゴロ喉を鳴らした']};
+function chooseAction(kind){if(!pendingAction)return;pendingAction=false;const reaction=reactions[kind][Math.floor(Math.random()*reactions[kind].length)];$('eventText').textContent='三毛猫に'+(kind==='talk'?'声を掛けた。':'そっと触れた。')+' '+reaction+'！';setTimeout(()=>award(),850)}
+function award(){rollover();const available=state.items.filter(i=>(i.remaining??i.count)>0);if(!available.length){$('status').textContent='現在、クジの中身がありません。';resetHome();return}
+ const item=available[Math.floor(Math.random()*available.length)];item.remaining=Math.max(0,(item.remaining??item.count)-1);state.daily.count++;state.history.unshift({date:new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}),name:item.name});state.history=state.history.slice(0,300);save();
+ $('resultName').textContent=item.name;$('resultArea').classList.remove('hidden');$('encounter').classList.add('hidden');$('status').textContent=state.settings.winPhrase||'';renderHistory();randomCat();}
+function resetHome(){$('encounter').classList.add('hidden');$('drawBtn').classList.remove('hidden');$('resultArea').classList.add('hidden');encounterStarted=false;pendingAction=false}
+function renderHistory(){const body=$('historyRows');body.replaceChildren();if(!state.history.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=2;td.textContent='まだ当選履歴はありません。';tr.append(td);body.append(tr);return}state.history.forEach(h=>{const tr=document.createElement('tr'),a=document.createElement('td'),b=document.createElement('td');a.textContent=h.date;b.textContent=h.name;tr.append(a,b);body.append(tr)})}
+function fillSettings(){const s=state.settings;$('settingTitle').value=s.title;$('settingDescription').value=s.description;$('settingTextColor').value=s.textColor;$('settingButtonColor').value=s.buttonColor;$('settingLineColor').value=s.lineColor;$('dailyLimit').value=s.dailyLimit;$('winPhrase').value=s.winPhrase}
+function renderItems(){const box=$('itemsList');box.replaceChildren();if(!state.items.length){box.textContent='アイテムはありません。';return}
+ state.items.forEach(item=>{const row=document.createElement('div');row.className='item-row';const name=document.createElement('input');name.value=item.name;name.setAttribute('aria-label','アイテム名');name.addEventListener('change',()=>{item.name=name.value;save()});const count=document.createElement('input');count.type='number';count.min='0';count.value=item.count;count.setAttribute('aria-label','個数');count.addEventListener('change',()=>{item.count=Math.max(0,Number(count.value)||0);item.remaining=item.count;save()});const del=document.createElement('button');del.textContent='削除';del.className='secondary';del.addEventListener('click',()=>{if(confirm('「'+item.name+'」を削除しますか？')){state.items=state.items.filter(x=>x.id!==item.id);save();renderItems()}});row.append(name,count,del);box.append(row);
+ if(item.image){const img=document.createElement('img');img.src=item.image;img.alt='';img.style.cssText='max-width:90px;max-height:70px;object-fit:contain;grid-column:1/-1';row.append(img)}
+ })}
+async function sha256(s){const data=new TextEncoder().encode(s);const hash=await crypto.subtle.digest('SHA-256',data);return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+$('drawBtn').addEventListener('click',startDraw);$('talkBtn').addEventListener('click',()=>chooseAction('talk'));$('petBtn').addEventListener('click',()=>chooseAction('pet'));$('closeResult').addEventListener('click',()=>{resetHome();$('status').textContent='';$('drawBtn').textContent=dailyRemaining()>0?'クジを引く':'本日のクジは終了しました';$('drawBtn').disabled=dailyRemaining()<=0});
+$('historyOpen').addEventListener('click',()=>{renderHistory();showOnly('historyPanel')});$('historyClose').addEventListener('click',()=>showOnly('home'));
+$('adminOpen').addEventListener('click',async()=>{if(!adminUnlocked){const p=prompt('管理者パスワードを入力してください');if(p===null)return;try{if(await sha256(p)!==ADMIN_HASH){alert('パスワードが違います');return}}catch(e){alert('このブラウザでは認証を実行できません');return}adminUnlocked=true}fillSettings();renderItems();showOnly('adminPanel')});
+$('adminClose').addEventListener('click',()=>showOnly('home'));
+$('saveSettingsBtn').addEventListener('click',()=>{state.settings.title=$('settingTitle').value.trim()||defaultState.settings.title;state.settings.description=$('settingDescription').value;state.settings.textColor=$('settingTextColor').value;state.settings.buttonColor=$('settingButtonColor').value;state.settings.lineColor=$('settingLineColor').value;state.settings.dailyLimit=Math.max(1,Math.min(100,Number($('dailyLimit').value)||1));state.settings.winPhrase=$('winPhrase').value;save();applySettings();alert('設定を保存しました')});
+$('refreshBtn').addEventListener('click',()=>{load();fillSettings();renderItems();renderHistory();alert('保存済みの設定を読み込みました')});
+$('resetDailyBtn').addEventListener('click',()=>{if(confirm('本日のクジ回数をリセットしますか？')){state.daily={date:today(),count:0};save();$('drawBtn').disabled=false;$('drawBtn').textContent='クジを引く';$('status').textContent='本日の回数をリセットしました。';alert('リセットしました')}});
+async function addItem(name,count,image=''){name=name.trim();if(!name){alert('アイテム名を入力してください');return}const id=Date.now()+Math.floor(Math.random()*1000);state.items.push({id,name,count:Math.max(0,Number(count)||0),remaining:Math.max(0,Number(count)||0),image});save();renderItems()}
+$('addItemBtn').addEventListener('click',async()=>{const file=$('newItemImage').files[0];let image='';if(file){if(file.size>1500000){alert('画像は1.5MB以下にしてください');return}image=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}await addItem($('newItemName').value,$('newItemCount').value,image);$('newItemName').value='';$('newItemImage').value=''});
+$('addFromHistoryBtn').addEventListener('click',()=>addItem($('historyItemName').value,$('historyItemCount').value));
+load();renderHistory();$('drawBtn').textContent=dailyRemaining()>0?'クジを引く':'本日のクジは終了しました';$('drawBtn').disabled=dailyRemaining()<=0;
+})();
+</script>
+</body></html>
